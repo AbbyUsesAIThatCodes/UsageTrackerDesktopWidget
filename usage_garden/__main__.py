@@ -11,7 +11,9 @@ def main():
     parser.add_argument("--data-dir", type=Path, help="Override the local settings directory")
     parser.add_argument("--screenshot", type=Path, help="Render an offscreen preview and exit")
     args = parser.parse_args()
-    if args.screenshot:
+    # Qt's offscreen Windows backend lacks the normal system font database.
+    # Grab the native window on Windows; use offscreen rendering on Linux CI.
+    if args.screenshot and sys.platform != "win32":
         os.environ["QT_QPA_PLATFORM"] = "offscreen"
     from PySide6.QtCore import QTimer, QLockFile
     from PySide6.QtWidgets import QApplication, QMessageBox
