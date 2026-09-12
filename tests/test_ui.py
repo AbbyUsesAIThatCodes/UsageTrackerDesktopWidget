@@ -59,6 +59,14 @@ class UiTests(unittest.TestCase):
         self.assertIsNone(editor.value()["reset"])
         settings.close(); editor.close()
 
+    def test_rebuilding_cards_hides_old_widgets_immediately(self):
+        old_card = self.window.layouts["Overview"].itemAt(1).widget()
+        self.assertTrue(old_card.isVisible())
+        self.store.state["compact"] = True
+        self.window.apply_theme(); self.window.render()
+        # Deferred deletion must not leave the previous reading painted over the new one.
+        self.assertTrue(old_card.isHidden())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -40,6 +40,7 @@ def clear(layout):
     while layout.count():
         item = layout.takeAt(0)
         if item.widget():
+            item.widget().hide()
             item.widget().deleteLater()
         elif item.layout():
             clear(item.layout())
