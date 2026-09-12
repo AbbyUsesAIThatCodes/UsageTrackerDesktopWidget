@@ -1,0 +1,47 @@
+name: Build Windows widget
+on:
+  push:
+    branches: [main, 'feature/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install build dependencies
+        run: python -m pip install -r requirements.txt pyinstaller==6.12.0
+      - name: Test data, protocol, and interface
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m unittest discover -s tests -v
+      - name: Build executable and verify bundled Codex
+        run: python scripts/build_windows.py
+      - name: Smoke test the packaged executable
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath 'dist/UsageGarden/UsageGarden.exe' -ArgumentList '--demo --data-dir test-output/packaged --screenshot test-output/packaged.png' -PassThru
+          if (-not $process.WaitForExit(60000)) { $process.Kill(); throw 'Packaged application timed out' }
+          if ($process.ExitCode -ne 0 -or -not (Test-Path 'test-output/packaged.png')) { throw 'Packaged application did not render' }
+      - name: Upload portable Windows app
+        uses: actions/upload-artifact@v4
+        with:
+          name: UsageGarden-FirstBloom-0.1.0-Windows-x64
+          path: dist/UsageGarden/
+          retention-days: 90
+      - name: Upload interface preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-widget-preview
+          path: test-output/packaged.png
